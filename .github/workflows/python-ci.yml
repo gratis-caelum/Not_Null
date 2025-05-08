@@ -9,6 +9,9 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    defaults:
+        run:
+            working-directory: Not_Null
     steps:
       - name: Checkout code
         uses: actions/checkout@v3                        # 코드 가져오기  [oai_citation:2‡Gist](https://gist.github.com/riccardo1980/11a92a0bfac23306b91d7ea7b4104605?utm_source=chatgpt.com)
@@ -20,20 +23,20 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('Not_Null/**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
         # 의존성 캐싱으로 속도 개선  [oai_citation:4‡GitHub Docs](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows?utm_source=chatgpt.com)
       - name: Install dependencies
         run: |
-            pip install -r Not_Null/requirements.txt
+            pip install -r requirements.txt
       - name: Lint (flake8)
         run: |
             pip install flake8
-            flake8 Not_Null/
+            flake8 .
       - name: Run tests (pytest)
         run: | 
             pip install pytest nbval 
             pytest --maxfail=1 --disable-warnings -q Not_Null/tests/
       - name: Validate notebooks (nbval)
-        run: pytest --nbval Not_Null/notebooks/eda.ipynb           # nbval 플러그인으로 노트북 검증  [oai_citation:7‡GitHub](https://github.com/computationalmodelling/nbval?utm_source=chatgpt.com)
+        run: pytest --nbval /notebooks/eda.ipynb           # nbval 플러그인으로 노트북 검증  [oai_citation:7‡GitHub](https://github.com/computationalmodelling/nbval?utm_source=chatgpt.com)
