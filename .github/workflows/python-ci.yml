@@ -9,6 +9,9 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    defaults:
+        run:
+            working-directory: Not_Null
     steps:
       - name: Checkout code
         uses: actions/checkout@v3                        # 코드 가져오기  [oai_citation:2‡Gist](https://gist.github.com/riccardo1980/11a92a0bfac23306b91d7ea7b4104605?utm_source=chatgpt.com)
