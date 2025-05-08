@@ -34,7 +34,7 @@ jobs:
       - name: Run tests (pytest)
         run: | 
             pip install pytest nbval 
-            pytest -xvs tests/
+            pytest -xvs .
       - name: Validate notebooks (nbval)
         run: |
             pip install pytest nbval
