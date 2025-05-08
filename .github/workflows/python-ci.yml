@@ -27,10 +27,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Lint (flake8)
-        uses: py-actions/flake8@v1                       # flake8 액션 이용  [oai_citation:5‡GitHub](https://github.com/py-actions/flake8?utm_source=chatgpt.com)
-        with:
-          args: src/ tests/ notebooks/
+        run: |
+            pip install flake8
+            flake8 .
       - name: Run tests (pytest)
-        run: pip install pytest nbval pytest --maxfail=1 --disable-warnings -q tests/ # pytest 실행  [oai_citation:6‡Stack Overflow](https://stackoverflow.com/questions/60298449/github-action-with-pytest?utm_source=chatgpt.com)
+        run: | 
+            pip install pytest nbval 
+            pytest --maxfail=1 --disable-warnings -q 
       - name: Validate notebooks (nbval)
         run: pytest --nbval notebooks/eda.ipynb           # nbval 플러그인으로 노트북 검증  [oai_citation:7‡GitHub](https://github.com/computationalmodelling/nbval?utm_source=chatgpt.com)
