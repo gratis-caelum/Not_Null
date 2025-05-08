@@ -25,21 +25,17 @@ jobs:
             ${{ runner.os }}-pip-
         # 의존성 캐싱으로 속도 개선  [oai_citation:4‡GitHub Docs](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows?utm_source=chatgpt.com)
       - name: Install dependencies
-        working-directory: Not_Null
         run: |
             pip install -r requirements.txt
       - name: Lint (flake8)
-        working-directory: Not_Null
         run: |
             pip install flake8
             flake8 .
       - name: Run tests (pytest)
-        working-directory: Not_Null
         run: | 
             pip install pytest nbval 
             pytest --maxfail=1 --disable-warnings -q 
       - name: Validate notebooks (nbval)
-        working-directory: Not_Null
         run: |
             pip install pytest nbval
             pytest --nbval notebooks/eda.ipynb
