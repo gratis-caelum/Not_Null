@@ -1,0 +1,36 @@
+name: Lightweight CI
+
+on:
+  push:
+    branches: [ main, 'feature/**' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3                        # 코드 가져오기  [oai_citation:2‡Gist](https://gist.github.com/riccardo1980/11a92a0bfac23306b91d7ea7b4104605?utm_source=chatgpt.com)
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'                         # Python 환경 구성  [oai_citation:3‡GitHub](https://github.com/actions/setup-python?utm_source=chatgpt.com)
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+        # 의존성 캐싱으로 속도 개선  [oai_citation:4‡GitHub Docs](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows?utm_source=chatgpt.com)
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Lint (flake8)
+        uses: py-actions/flake8@v1                       # flake8 액션 이용  [oai_citation:5‡GitHub](https://github.com/py-actions/flake8?utm_source=chatgpt.com)
+        with:
+          args: src/ tests/ notebooks/
+      - name: Run tests (pytest)
+        run: pip install pytest nbval && pytest --maxfail=1 --disable-warnings -q  # pytest 실행  [oai_citation:6‡Stack Overflow](https://stackoverflow.com/questions/60298449/github-action-with-pytest?utm_source=chatgpt.com)
+      - name: Validate notebooks (nbval)
+        run: pytest --nbval notebooks/eda.ipynb           # nbval 플러그인으로 노트북 검증  [oai_citation:7‡GitHub](https://github.com/computationalmodelling/nbval?utm_source=chatgpt.com)
