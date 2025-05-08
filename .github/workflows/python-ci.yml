@@ -29,7 +29,7 @@ jobs:
       - name: Lint (flake8)
         uses: py-actions/flake8@v1                       # flake8 액션 이용  [oai_citation:5‡GitHub](https://github.com/py-actions/flake8?utm_source=chatgpt.com)
         with:
-          args: src/ tests/ notebooks/
+          args: Not_Null/src/ Not_Null/tests/ Not_Null/notebooks/
       - name: Run tests (pytest)
         run: pip install pytest nbval && pytest --maxfail=1 --disable-warnings -q  # pytest 실행  [oai_citation:6‡Stack Overflow](https://stackoverflow.com/questions/60298449/github-action-with-pytest?utm_source=chatgpt.com)
       - name: Validate notebooks (nbval)
