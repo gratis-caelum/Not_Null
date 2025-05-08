@@ -34,7 +34,7 @@ jobs:
       - name: Run tests (pytest)
         run: | 
             pip install pytest nbval 
-            pytest --maxfail=1 --disable-warnings -q 
+            pytest -xvs tests/
       - name: Validate notebooks (nbval)
         run: |
             pip install pytest nbval
