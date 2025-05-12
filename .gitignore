@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*.cursor/
 
 # C extensions
 *.so
@@ -173,3 +174,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# 대용량 데이터 파일
+data/raw/train.csv
+data/raw/test.csv
+data/*/*.csv
+*DS_Store*
