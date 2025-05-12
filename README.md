@@ -80,6 +80,13 @@
 - Prophet, ARIMA 등의 시계열 모델로 미래 전력 수요 예측 자동화
 - 설비별 피크 탐지 및 알림 기능 추가 (Slack, 텔레그램 연동 등)
 
+### Team 역할 분담
+1. Data Search & Preprocessing & Analysis : 김병찬
+2. ML Model : 곽나현
+3. DL Model : 김진민
+4. PPT & Document & Overall support : 이경민
+
+
 ## 프로젝트 구조
 
 ```
