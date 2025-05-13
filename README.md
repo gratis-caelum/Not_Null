@@ -83,7 +83,7 @@
 ### Team 역할 분담
 1. Data Search & Preprocessing & Analysis : 김병찬
 2. ML Model : 곽나현
-3. DL Model : 김진민
+3. DL Model : 김진호
 4. PPT & Document & Overall support : 이경민
 
 
