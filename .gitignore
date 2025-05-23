@@ -179,5 +179,8 @@ cython_debug/
 data/raw/train.csv
 data/raw/test.csv
 data/processed/
+data/ml_ready/
+
+
 
 
