@@ -20,23 +20,6 @@
 - **설비 정보**: `module(equipment)` - 다양한 공장 설비
 - **전압 데이터**: `voltageR`, `voltageS`, `voltageT`
 
-## 🚀 빠른 시작 (Quick Start)
 
-### 1. 환경 설정
-```bash
-cd Not_Null/src/preprocessing
-pip install pandas numpy scikit-learn matplotlib seaborn
-```
-
-### 2. 전처리 파이프라인 실행
-```bash
-python main.py
-```
-
-실행 후 선택사항:
-- **샘플 데이터 사용**: `y` (추천, 빠른 테스트용)
-- **샘플 크기**: `100000` (10만개, 기본값)
-- **분할 방식**: `1` (submission 모드, 추천)
-- **데이터 저장**: `y`
 
 
