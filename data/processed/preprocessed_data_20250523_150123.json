@@ -1,0 +1,63 @@
+{
+  "original_shape": [
+    100000,
+    35
+  ],
+  "preprocessing_steps": [
+    "이상치 처리: iqr-cap",
+    "노이즈 필터링: moving_average",
+    "피처 엔지니어링: 16개 피처 생성",
+    "스케일링: robust"
+  ],
+  "new_features": [
+    "hour",
+    "day_of_week",
+    "day_of_month",
+    "month",
+    "quarter",
+    "year",
+    "hour_sin",
+    "hour_cos",
+    "day_sin",
+    "day_cos",
+    "month_sin",
+    "month_cos",
+    "is_weekend",
+    "is_business_hour",
+    "is_peak_hour",
+    "is_night_shift"
+  ],
+  "config": {
+    "missing_value": {
+      "method": "interpolate",
+      "interpolation_method": "linear"
+    },
+    "outlier_detection": {
+      "method": "iqr",
+      "threshold": 1.5,
+      "action": "cap"
+    },
+    "noise_filtering": {
+      "method": "moving_average",
+      "window_size": 3
+    },
+    "scaling": {
+      "method": "robust"
+    },
+    "feature_engineering": {
+      "time_features": true,
+      "lag_features": false,
+      "rolling_features": false,
+      "lag_periods": [
+        1,
+        6,
+        24
+      ],
+      "rolling_windows": [
+        6,
+        24
+      ]
+    }
+  },
+  "timestamp": "2025-05-23T15:01:27.578875"
+}

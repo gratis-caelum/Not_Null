@@ -178,5 +178,3 @@ cython_debug/
 # 대용량 데이터 파일
 data/raw/train.csv
 data/raw/test.csv
-data/*/*.csv
-*DS_Store*
