@@ -487,15 +487,15 @@ def main():
                 split_seq['X_test'] = X_test_seq
                 split_seq['test_data'] = test_df
             except Exception as e:
-                print(f"⚠️ 테스트 데이터 시퀀스 변환 실패: {e}")
-                print("   테스트 데이터는 테이블 형태로만 저장됩니다.")
+                print(f"테스트 데이터 시퀀스 변환 실패: {e}")
+                print(" 테스트 데이터는 테이블 형태로만 저장됩니다.")
                 split_seq['X_test'] = X_test_seq
                 split_seq['test_data'] = test_df
             
             save_dir_seq, timestamp_seq = preparator.save_ml_data(split_seq, "time_series")
         
-        print(f"\n🎉 ML/DL 학습 데이터 준비 완료!")
-        print(f"💾 결과는 'data/ml_ready/' 디렉토리에서 확인하세요.")
+        print(f"\nML/DL 학습 데이터 준비 완료")
+        print(f"결과는 'data/ml_ready/' 디렉토리에서 확인.")
         
         # 사용법 안내
         print(f"\n📖 데이터 구조:")
