@@ -35,6 +35,7 @@ class MLDataPreparator:
         self.target_column = None
         self.scaler = None
         self.data_info = {}
+        self.train_feature_stats = {}  # 훈련 데이터 통계 저장
         
     def load_preprocessed_data(self, file_path: str = None) -> pd.DataFrame:
         """전처리된 데이터 로드"""
@@ -46,10 +47,10 @@ class MLDataPreparator:
                 raise FileNotFoundError("전처리된 데이터 파일을 찾을 수 없습니다.")
             file_path = max(csv_files, key=lambda x: x.stat().st_mtime)
         
-        print(f"📊 전처리된 데이터 로딩: {file_path}")
+        print(f"전처리된 데이터 로딩: {file_path}")
         data = pd.read_csv(file_path)
         
-        print(f"✅ 데이터 로드 완료: {data.shape}")
+        print(f"데이터 로드 완료: {data.shape}")
         print(f"   - 컬럼 수: {len(data.columns)}")
         print(f"   - 메모리: {data.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
         
@@ -57,7 +58,7 @@ class MLDataPreparator:
     
     def identify_target_and_features(self, data: pd.DataFrame) -> Tuple[str, List[str]]:
         """타겟 변수와 피처 변수 식별"""
-        print("\n🎯 타겟 변수 및 피처 식별")
+        print("\n타겟 변수 및 피처 식별")
         
         # 전력 관련 컬럼들 찾기
         power_cols = [col for col in data.columns if any(keyword in col.lower() 
@@ -85,8 +86,8 @@ class MLDataPreparator:
         feature_columns = [col for col in data.columns 
                           if col not in exclude_cols and data[col].dtype in ['int64', 'float64']]
         
-        print(f"✅ 타겟 변수: {target_column}")
-        print(f"✅ 피처 변수: {len(feature_columns)}개")
+        print(f"타겟 변수: {target_column}")
+        print(f"피처 변수: {len(feature_columns)}개")
         print(f"   주요 피처: {feature_columns[:10]}...")
         
         self.target_column = target_column
@@ -98,7 +99,7 @@ class MLDataPreparator:
                                    sequence_length: int = 24,
                                    prediction_horizon: int = 1) -> Tuple[np.ndarray, np.ndarray]:
         """시계열 예측을 위한 시퀀스 데이터 생성"""
-        print(f"\n⏰ 시계열 시퀀스 생성 (윈도우: {sequence_length}, 예측: {prediction_horizon})")
+        print(f"\n시계열 시퀀스 생성 (윈도우: {sequence_length}, 예측: {prediction_horizon})")
         
         # 시간 순서대로 정렬
         if 'localtime' in data.columns:
@@ -124,7 +125,7 @@ class MLDataPreparator:
         X_sequences = np.array(X_sequences)
         y_sequences = np.array(y_sequences)
         
-        print(f"✅ 시퀀스 생성 완료:")
+        print(f"시퀀스 생성 완료:")
         print(f"   - X shape: {X_sequences.shape} (samples, timesteps, features)")
         print(f"   - y shape: {y_sequences.shape} (samples, prediction_horizon)")
         
@@ -132,7 +133,7 @@ class MLDataPreparator:
     
     def create_tabular_data(self, data: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
         """테이블 형태 ML을 위한 데이터 생성"""
-        print(f"\n📋 테이블 형태 데이터 생성")
+        print(f"\n테이블 형태 데이터 생성")
         
         # 결측치 제거
         clean_data = data[self.feature_columns + [self.target_column]].dropna()
@@ -140,10 +141,21 @@ class MLDataPreparator:
         X = clean_data[self.feature_columns].values
         y = clean_data[self.target_column].values
         
-        print(f"✅ 테이블 데이터 생성 완료:")
+        # 훈련 데이터 통계 저장 (테스트 데이터 처리용)
+        self.train_feature_stats = {}
+        for i, feature in enumerate(self.feature_columns):
+            self.train_feature_stats[feature] = {
+                'mean': float(clean_data[feature].mean()),
+                'std': float(clean_data[feature].std()),
+                'min': float(clean_data[feature].min()),
+                'max': float(clean_data[feature].max())
+            }
+        
+        print(f"테이블 데이터 생성 완료:")
         print(f"   - X shape: {X.shape} (samples, features)")
         print(f"   - y shape: {y.shape} (samples,)")
         print(f"   - 결측치 제거 후: {len(clean_data)}/{len(data)} 샘플")
+        print(f"   - 훈련 데이터 통계 저장: {len(self.train_feature_stats)}개 피처")
         
         return X, y
     
@@ -151,7 +163,7 @@ class MLDataPreparator:
                    val_size: float = 0.2,
                    time_series: bool = True) -> Dict:
         """데이터 분할 (Train/Validation만, Test는 별도 파일)"""
-        print(f"\n✂️ Train 데이터 분할 (Validation: {val_size*100}%)")
+        print(f"\nTrain 데이터 분할 (Validation: {val_size*100}%)")
         
         if time_series:
             # 시계열 데이터는 시간 순서 유지
@@ -175,56 +187,56 @@ class MLDataPreparator:
             'X_val': X_val, 'y_val': y_val
         }
         
-        print(f"✅ Train 데이터 분할 완료:")
+        print(f"Train 데이터 분할 완료:")
         print(f"   - Train: {X_train.shape[0]} 샘플")
         print(f"   - Validation: {X_val.shape[0]} 샘플")
         
         return split_data
     
-    def prepare_test_data(self, submission_template: pd.DataFrame) -> Tuple[np.ndarray, pd.DataFrame]:
-        """실제 테스트 데이터 준비 (submission 템플릿에 맞춤, 최소 전처리)"""
-        print(f"\n📋 실제 테스트 데이터 준비 (Submission 템플릿 기준)")
+    def prepare_test_data(self, submission_template: pd.DataFrame, apply_scaling: bool = True) -> Tuple[np.ndarray, pd.DataFrame]:
+        """실제 테스트 데이터 준비 (submission 템플릿에 맞춤, 훈련 데이터와 동일한 전처리 적용)"""
+        print(f"\n실제 테스트 데이터 준비 (훈련 데이터와 동일한 전처리)")
         
         # test.csv 로드
         test_path = project_root / "data" / "raw" / "test.csv"
         if not test_path.exists():
             raise FileNotFoundError(f"테스트 데이터 파일이 없습니다: {test_path}")
         
-        print(f"📊 테스트 데이터 로딩: {test_path}")
+        print(f"테스트 데이터 로딩: {test_path}")
         
         # Submission 기간 확인
         submission_times = pd.to_datetime(submission_template['id'])
         start_time = submission_times.min()
         end_time = submission_times.max()
         
-        print(f"📅 Submission 예측 기간: {start_time} ~ {end_time}")
+        print(f"Submission 예측 기간: {start_time} ~ {end_time}")
         print(f"   총 {len(submission_template)}개 시점 예측 필요")
         
         # 효율적 로딩: 필요한 부분 + 여유분만 로드
-        print(f"⚡ 효율적 데이터 로딩 중...")
+        print(f"효율적 데이터 로딩 중...")
         
         # 전체 파일에서 샘플링 (시계열 연속성 고려하여 최근 데이터)
         total_rows_estimate = 500000  # 대략적 추정
         skip_rows = max(0, total_rows_estimate - 50000)  # 마지막 5만개만 로드
         
         test_data = pd.read_csv(test_path, skiprows=range(1, skip_rows), nrows=50000)
-        print(f"✅ 테스트 데이터 샘플 로드: {test_data.shape}")
+        print(f"테스트 데이터 샘플 로드: {test_data.shape}")
         
-        # 최소한의 전처리만 적용
-        print(f"🔧 최소한의 전처리 적용...")
+        # 전체 전처리 파이프라인 적용 (훈련 데이터와 동일)
+        print(f"전체 전처리 파이프라인 적용 중...")
         
         # 1. localtime 처리
         if 'localtime' in test_data.columns:
             test_data['localtime'] = pd.to_datetime(test_data['localtime'].astype(str), format='%Y%m%d%H%M%S', errors='coerce')
             test_data = test_data.sort_values('localtime').reset_index(drop=True)
-            print(f"✅ 시간 컬럼 처리 완료")
+            print(f"시간 컬럼 처리 완료")
         
-        # 2. 결측치 처리만 (필수)
+        # 2. 결측치 처리
         numeric_cols = test_data.select_dtypes(include=[np.number]).columns
         for col in numeric_cols:
             if test_data[col].isnull().sum() > 0:
                 test_data[col] = test_data[col].fillna(test_data[col].median())
-        print(f"✅ 결측치 처리 완료")
+        print(f"결측치 처리 완료")
         
         # 3. 시간 특성 추가 (Train과 동일 구조 필요)
         if 'localtime' in test_data.columns:
@@ -240,7 +252,7 @@ class MLDataPreparator:
             test_data['is_peak_hour'] = ((test_data['hour'] >= 8) & (test_data['hour'] <= 18)).astype(int)
             test_data['is_business_hour'] = ((test_data['hour'] >= 9) & (test_data['hour'] <= 17)).astype(int)
             
-            print(f"✅ 시간 특성 추가 완료")
+            print(f"시간 특성 추가 완료")
         
         # 4. Submission 기간에 해당하는 데이터 추출
         if 'localtime' in test_data.columns:
@@ -250,13 +262,13 @@ class MLDataPreparator:
             mask = (test_times >= start_time) & (test_times <= end_time)
             filtered_test = test_data[mask].copy()
             
-            print(f"🔍 Submission 기간과 매칭된 데이터: {len(filtered_test)}개")
+            print(f"Submission 기간과 매칭된 데이터: {len(filtered_test)}개")
             
             if len(filtered_test) < len(submission_template):
-                print(f"⚠️ 매칭된 데이터 부족, 최신 {len(submission_template)}개 데이터 사용")
+                print(f"매칭된 데이터 부족, 최신 {len(submission_template)}개 데이터 사용")
                 filtered_test = test_data.tail(len(submission_template)).copy()
         else:
-            print("⚠️ localtime 없음, 최신 데이터 사용")
+            print("localtime 없음, 최신 데이터 사용")
             filtered_test = test_data.tail(len(submission_template)).copy()
         
         # 5. Submission 템플릿에 맞춰 정렬
@@ -272,31 +284,52 @@ class MLDataPreparator:
         # Submission ID 추가
         filtered_test['submission_id'] = submission_template['id'].values
         
-        # 6. 핵심 피처만 선택 (스케일링은 모델에서 처리)
+        # 6. 핵심 피처만 선택 및 누락 피처 처리 개선
         available_features = [col for col in self.feature_columns if col in filtered_test.columns]
         
         if len(available_features) != len(self.feature_columns):
             print(f"⚠️ 일부 피처가 테스트 데이터에 없습니다:")
             missing_features = set(self.feature_columns) - set(available_features)
             print(f"   누락된 피처: {missing_features}")
-            # 누락된 피처는 0으로 채움
+            
+            # 누락된 피처를 훈련 데이터 평균값으로 채움 (0 대신)
             for feature in missing_features:
-                filtered_test[feature] = 0
+                if feature in self.train_feature_stats:
+                    fill_value = self.train_feature_stats[feature]['mean']
+                    print(f"   {feature}: 훈련 데이터 평균값 {fill_value:.4f}로 채움")
+                else:
+                    fill_value = 0
+                    print(f"   ⚠️ {feature}: 통계 없음, 0으로 채움")
+                filtered_test[feature] = fill_value
+            
             available_features = self.feature_columns
         
+        # 7. 피처 데이터 추출
         X_test = filtered_test[available_features].values
         
-        print(f"✅ Submission 맞춤 테스트 데이터 준비 완료:")
+        # 8. 스케일링 적용 (훈련 데이터와 동일한 스케일러 사용)
+        if apply_scaling and self.scaler is not None:
+            print(f"훈련 데이터와 동일한 스케일링 적용 중...")
+            X_test_original = X_test.copy()
+            X_test = self.scaler.transform(X_test)
+            
+            print(f"✅ 스케일링 적용 완료:")
+            print(f"   - 스케일링 전: 범위 {X_test_original.min():.4f} ~ {X_test_original.max():.4f}")
+            print(f"   - 스케일링 후: 범위 {X_test.min():.4f} ~ {X_test.max():.4f}")
+        elif apply_scaling and self.scaler is None:
+            print(f"⚠️ 스케일러가 저장되지 않았습니다. 스케일링을 건너뜁니다.")
+        
+        print(f"✅ 훈련 데이터와 동일한 전처리 완료:")
         print(f"   - X_test shape: {X_test.shape}")
         print(f"   - 사용된 피처: {len(available_features)}개")
-        print(f"   - 전처리: 최소한 (결측치 + 시간특성)")
+        print(f"   - 전처리: 완전 (결측치 + 시간특성 + 스케일링)")
         print(f"   - Submission 호환: ✅")
         
         return X_test, filtered_test
     
     def save_ml_data(self, split_data: Dict, data_type: str = "tabular"):
         """ML 학습용 데이터 저장"""
-        print(f"\n💾 ML 학습용 데이터 저장 ({data_type})")
+        print(f"\nML 학습용 데이터 저장 ({data_type})")
         
         # 저장 디렉토리 생성
         save_dir = project_root / "data" / "ml_ready" / data_type
@@ -306,31 +339,49 @@ class MLDataPreparator:
         
         # 데이터 저장
         for split_name, data_array in split_data.items():
-            file_path = save_dir / f"{split_name}_{timestamp}.npy"
-            np.save(file_path, data_array)
-            print(f"   - {split_name}: {file_path}")
+            if isinstance(data_array, np.ndarray):  # numpy 배열만 저장
+                file_path = save_dir / f"{split_name}_{timestamp}.npy"
+                np.save(file_path, data_array)
+                print(f"   - {split_name}: {file_path}")
+        
+        # 스케일러 저장 (있는 경우)
+        if self.scaler is not None:
+            import pickle
+            scaler_path = save_dir / f"scaler_{timestamp}.pkl"
+            with open(scaler_path, 'wb') as f:
+                pickle.dump(self.scaler, f)
+            print(f"   - scaler: {scaler_path}")
+        
+        # 훈련 데이터 통계 저장
+        if self.train_feature_stats:
+            stats_path = save_dir / f"train_stats_{timestamp}.json"
+            with open(stats_path, 'w', encoding='utf-8') as f:
+                json.dump(self.train_feature_stats, f, indent=2, ensure_ascii=False)
+            print(f"   - train_stats: {stats_path}")
         
         # 메타데이터 저장
         metadata = {
             'data_type': data_type,
             'target_column': self.target_column,
             'feature_columns': self.feature_columns,
-            'shapes': {name: data.shape for name, data in split_data.items()},
+            'shapes': {name: data.shape for name, data in split_data.items() if isinstance(data, np.ndarray)},
             'timestamp': timestamp,
-            'total_features': len(self.feature_columns)
+            'total_features': len(self.feature_columns),
+            'has_scaler': self.scaler is not None,
+            'has_train_stats': bool(self.train_feature_stats)
         }
         
         metadata_path = save_dir / f"metadata_{timestamp}.json"
         with open(metadata_path, 'w', encoding='utf-8') as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
         
-        print(f"✅ 메타데이터 저장: {metadata_path}")
+        print(f"메타데이터 저장: {metadata_path}")
         
         return save_dir, timestamp
     
     def select_important_features(self, data: pd.DataFrame) -> List[str]:
         """ML/DL에 적합한 핵심 피처만 선택"""
-        print(f"\n🎯 핵심 피처 선택")
+        print(f"\n핵심 피처 선택")
         
         # 스마트 팩토리 전력 예측에 중요한 피처들
         core_power_features = [
@@ -359,7 +410,7 @@ class MLDataPreparator:
             if feature in data.columns and feature != self.target_column:
                 available_features.append(feature)
         
-        print(f"✅ 선택된 핵심 피처: {len(available_features)}개")
+        print(f"선택된 핵심 피처: {len(available_features)}개")
         print(f"   전력 관련: {[f for f in available_features if any(k in f.lower() for k in ['voltage', 'current', 'power', 'energy', 'operation'])]}")
         print(f"   시간 관련: {[f for f in available_features if f in core_time_features]}")
         
@@ -367,7 +418,7 @@ class MLDataPreparator:
     
     def prepare_submission_template(self) -> pd.DataFrame:
         """submission 템플릿 준비"""
-        print(f"\n📋 Submission 템플릿 준비")
+        print(f"\nSubmission 템플릿 준비")
         
         # sample_submission_final.csv 로드
         submission_path = project_root / "data" / "raw" / "sample_submission_final.csv"
@@ -420,8 +471,22 @@ def main():
             X_tab, y_tab = preparator.create_tabular_data(train_data)
             split_tab = preparator.split_data(X_tab, y_tab, time_series=False)
             
-            # 실제 테스트 데이터 준비
-            X_test_tab, test_df = preparator.prepare_test_data(submission_template)
+            # 스케일링 적용 (훈련 데이터 기준으로 피팅)
+            print(f"\n🔧 스케일링 적용 중...")
+            from sklearn.preprocessing import StandardScaler
+            preparator.scaler = StandardScaler()
+            
+            # 훈련 데이터로 스케일러 학습
+            X_train_original = split_tab['X_train'].copy()
+            split_tab['X_train'] = preparator.scaler.fit_transform(split_tab['X_train'])
+            split_tab['X_val'] = preparator.scaler.transform(split_tab['X_val'])
+            
+            print(f"✅ 스케일링 완료:")
+            print(f"   - 원본 훈련 데이터 범위: {X_train_original.min():.4f} ~ {X_train_original.max():.4f}")
+            print(f"   - 스케일링 후 범위: {split_tab['X_train'].min():.4f} ~ {split_tab['X_train'].max():.4f}")
+            
+            # 실제 테스트 데이터 준비 (스케일링 자동 적용됨)
+            X_test_tab, test_df = preparator.prepare_test_data(submission_template, apply_scaling=True)
             split_tab['X_test'] = X_test_tab
             split_tab['test_data'] = test_df  # 예측 결과 저장용
             
@@ -429,12 +494,12 @@ def main():
         
         if choice == "2" or choice == "3":
             # 시계열 시퀀스 데이터 생성
-            print(f"\n⏰ 시계열 시퀀스 데이터 준비 중...")
+            print(f"\n시계열 시퀀스 데이터 준비 중...")
             
             # 시퀀스 길이 설정
-            print(f"\n⏰ 시계열 설정 권장사항:")
-            print(f"   🏭 스마트 팩토리 전력 예측 최적화")
-            print(f"   📊 시퀀스 길이 (Sequence Length):")
+            print(f"\n시계열 설정 권장사항:")
+            print(f"   스마트 팩토리 전력 예측 최적화")
+            print(f"   시퀀스 길이 (Sequence Length):")
             print(f"      - 24시간: 일일 패턴 학습 (빠름, 기본)")
             print(f"      - 48시간: 2일 패턴 (안정성)")  
             print(f"      - 72시간: 3일 패턴 (주말 고려)")
@@ -452,13 +517,13 @@ def main():
             
             if choice == "1":
                 sequence_length, prediction_horizon = 24, 1
-                print(f"✅ 기본 설정 선택: {sequence_length}시간 → {prediction_horizon}시간")
+                print(f"기본 설정 선택: {sequence_length}시간 → {prediction_horizon}시간")
             elif choice == "2":
                 sequence_length, prediction_horizon = 48, 1  
-                print(f"✅ 안정성 설정 선택: {sequence_length}시간 → {prediction_horizon}시간")
+                print(f"안정성 설정 선택: {sequence_length}시간 → {prediction_horizon}시간")
             elif choice == "3":
                 sequence_length, prediction_horizon = 72, 1
-                print(f"✅ 최적화 설정 선택: {sequence_length}시간 → {prediction_horizon}시간")
+                print(f"최적화 설정 선택: {sequence_length}시간 → {prediction_horizon}시간")
             else:
                 sequence_length = int(input("시퀀스 길이를 입력하세요 (기본: 24): ") or "24")
                 prediction_horizon = int(input("예측 구간을 입력하세요 (기본: 1): ") or "1")
@@ -498,20 +563,20 @@ def main():
         print(f"결과는 'data/ml_ready/' 디렉토리에서 확인.")
         
         # 사용법 안내
-        print(f"\n📖 데이터 구조:")
+        print(f"\n  데이터 구조:")
         print(f"   - Train: 학습용 데이터 (레이블 있음)")
         print(f"   - Validation: 검증용 데이터 (레이블 있음)")
         print(f"   - Test: 실제 예측용 데이터 (레이블 없음)")
         print(f"   - 타겟 변수: {target_col}")
         print(f"   - 피처 수: {len(feature_cols)}개")
         
-        print(f"\n📖 사용법:")
+        print(f"\n  사용법:")
         print(f"   - Python에서: np.load('파일경로.npy')로 로드")
         print(f"   - 메타데이터: JSON 파일에서 컬럼 정보 확인")
         print(f"   - 예측 후 결과를 submission 형태로 변환 필요")
         
     except Exception as e:
-        print(f"❌ 데이터 준비 실패: {e}")
+        print(f"데이터 준비 실패: {e}")
         import traceback
         traceback.print_exc()
 
